@@ -1,87 +1,113 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../basic_crypto.dart';
+import 'dart:math';
+import 'dart:io';
 
-class RailFence extends Criptografia {
-  final String explicacao = """Na cifra RailFence o plaintext é escrito para baixo e na diagonal em sucessivas "linhas", e então para cima assim que chegar na última linha. Chegando novamente na primeira linha, a mensagem volta a ser escrita para baixo, e assim por diante até que toda a mensagem seja escrita, e então a mensagem é lida normalmente. Por exemplo a frase: 'UMA FRASE DE EXEMPLO' ficaria:
-
-U . . . F . . . E . . .   . . . M . . .
-. M .   . R . S .   . E . E . E . P . O
-. . A . . . A . . . D . . . X . . . L .
-
-O ciphertext seria:
-
-UFE MM RS EEEPOAADXL""";
-  final String nome = "RailFence";
-  final Nivel nivel = Nivel.MEDIO;
+class Kamasutra extends Criptografia {
+  final String explicacao =
+  """Essa criptografia gera uma lista com 26 letras do alfabeto sem repetições e depois a divide em e 2 linhas com 13 letras em cada uma. Feito isso, ela procura cada letra do texto digitado e a substitui pela letra que possui a mesma posição que ela na outra linha""";
+  final String nome = "Kamasutra";
+  final Nivel nivel = Nivel.BASICO;
 
   @override
-  State<StatefulWidget> createState() => _RailFenceState(explicacao, nome);
+  State<StatefulWidget> createState() =>
+      _KamasutraState(explicacao, nome);
 
   @override
   String decrypt(String cyphertext, {String key}) {
-    List caracteres = new List(cyphertext.length);
-    int linha = 0;
-    int count = 0;
-    String plaintext = "";
-    for (int i = 0; i < cyphertext.length; i++) {
-      if (linha == 0) {
-        if (count * 4 >= cyphertext.length) {
-          linha++;
-          count = 0;
-        } else {
-          caracteres[count * 4] = cyphertext[i];
-          count++;
-        }
-      }
-      if (linha == 1) {
-        if (count * 2 >= cyphertext.length) {
-          linha++;
-          count = 0;
-        } else {
-          caracteres[(count * 2) + linha] = cyphertext[i];
-          count++;
-        }
-      }
-      if (linha == 2) {
-        if ((count * 4) + 2 >= cyphertext.length) {
-          break;
-        } else {
-          caracteres[(count * 4) + 2] = cyphertext[i];
-          count++;
-        }
-      }
-    }
-    for (int i = 0; i < caracteres.length; i++) {
-      plaintext += caracteres[i];
-    }
-    return plaintext;
+    String text = cyphertext.toUpperCase();
+    //String key  = keyKS;
+    String enc = KSutra(text, key);
+    //String dec = KSutra(enc, key);
+
+    return enc;
   }
 
   @override
   String encrypt(String plaintext, {String key}) {
-    List caracteres = new List();
-    String cyphertext = "";
-    for (int i = 0; i < plaintext.length; i++) {
-      caracteres.add(plaintext[i]);
-    }
-    for (int i = 0; i < 3; i++) {
-      for (int j = i; j < caracteres.length; j += i % 2 != 1 ? 4 : 2) {
-        cyphertext += caracteres[j];
-      }
-    }
-    return cyphertext;
+    String text = plaintext.toUpperCase();
+    //String key = keyKS;
+    String enc = KSutra(text, key);
+
+    return enc;
   }
 }
 
-class _RailFenceState extends State<RailFence> {
+String RandomAlphaNoDuplicate(int len) {
+  var r = new Random();
+  String key = "";
+  for (int i = 0; i < len;) {
+    var c = "A".codeUnits.first + r.nextInt(26);
+    if (!key.contains(String.fromCharCode(c))) {
+      key += String.fromCharCode(c);
+      i++;
+    }
+  }
+  return key;
+}
+
+String KSutra(String text, String key) {
+  double keyLen = key.length / 2;
+
+  List keyRow = new List(key.length);
+  int count = 0;
+  int x = 0;
+  int z = 0;
+  for (x = 0; x < 2; x++) {
+    if (x == 0) {
+      z = 0;
+    } else {
+      z = keyLen.toInt();
+    }
+
+    for (int y = 0; y < keyLen; y++) {
+      keyRow[y + z] = key[count];
+      count++;
+    }
+
+
+  }
+
+  String sb = "";
+
+  count = 0;
+  int j = 0;
+  for (int z = 0; z < text.length; z++) {
+    for (int x = 0; x < 2; x++) {
+      if (x == 0) {
+        j = 0;
+      } else {
+        j = keyLen.toInt();
+      }
+
+      for (int y = 0; y < keyLen; y++) {
+        if (x == 0) {
+          if (text[z] == keyRow[j + y]) {
+            sb += keyRow[j + keyLen.toInt() + y];
+          }
+        } else if (x == 1) {
+          if (text[z] == keyRow[j + y]) {
+            sb += keyRow[j - keyLen.toInt() + y];
+          }
+        }
+      }
+    }
+    if (text[z] == ' ') sb += text[z];
+  }
+
+  return sb;
+}
+
+class _KamasutraState extends State<Kamasutra> {
   final TextEditingController _input = new TextEditingController();
+  String keyKS = RandomAlphaNoDuplicate(26);
   String _output = "Resultado";
   final String explicacao;
   final String nome;
-  final RailFence CRIPTO = new RailFence();
+  final Kamasutra CRIPTO = new Kamasutra();
 
-  _RailFenceState(this.explicacao, this.nome);
+  _KamasutraState(this.explicacao, this.nome);
 
   @override
   Widget build(BuildContext context) {
@@ -121,6 +147,19 @@ class _RailFenceState extends State<RailFence> {
             ),
           ),
 
+          // Key
+          new Container(
+            margin: new EdgeInsets.only(left: 16.0, right: 16.0, bottom: 8.0),
+            child: new RichText(
+              text: new TextSpan(
+                text: keyKS,
+                style: new TextStyle(color: Colors.black),
+              ),
+              textDirection: TextDirection.ltr,
+              overflow: TextOverflow.clip,
+            ),
+          ),
+
           // Botões
           new Row(
             children: <Widget>[
@@ -130,7 +169,7 @@ class _RailFenceState extends State<RailFence> {
                   color: Colors.grey.shade300,
                   onPressed: () {
                     setState(() {
-                      _output = CRIPTO.encrypt(_input.text);
+                      _output = CRIPTO.encrypt(_input.text, key: keyKS);
                     });
                   },
                   child: new Center(child: new Text("Encrypt")),
@@ -142,7 +181,7 @@ class _RailFenceState extends State<RailFence> {
                   color: Colors.grey.shade300,
                   onPressed: () {
                     setState(() {
-                      _output = CRIPTO.decrypt(_input.text);
+                      _output = CRIPTO.decrypt(_input.text, key: keyKS);
                     });
                   },
                   child: new Center(child: new Text("Decrypt")),

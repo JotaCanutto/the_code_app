@@ -2,86 +2,82 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../basic_crypto.dart';
 
-class RailFence extends Criptografia {
-  final String explicacao = """Na cifra RailFence o plaintext é escrito para baixo e na diagonal em sucessivas "linhas", e então para cima assim que chegar na última linha. Chegando novamente na primeira linha, a mensagem volta a ser escrita para baixo, e assim por diante até que toda a mensagem seja escrita, e então a mensagem é lida normalmente. Por exemplo a frase: 'UMA FRASE DE EXEMPLO' ficaria:
-
-U . . . F . . . E . . .   . . . M . . .
-. M .   . R . S .   . E . E . E . P . O
-. . A . . . A . . . D . . . X . . . L .
-
-O ciphertext seria:
-
-UFE MM RS EEEPOAADXL""";
-  final String nome = "RailFence";
-  final Nivel nivel = Nivel.MEDIO;
+class Atbash extends Criptografia {
+  final String explicacao = "Atbash é uma criptografia de simples substituição do alfabeto hebraico. Ela consiste na substituição do aleph (a primeira letra) pela tav (a última), beth (a segunda) pela shin (a penúltima), e assim por diante, invertendo o alfabeto usual."
+                            "\nUma decodificação em Atbash para o alfabeto romano seria assim: "
+                            "\n\nNormal:  A B C D E F G H I J K L M N O P Q R S T U V W X Y Z"
+                            "\nCódigo:  Z Y X W V U T S R Q P O N M L K J I H G F E D C B A"
+                            "\n\nO método Atbash pode ser usado para criptografar expressões de qualquer alfabeto, devido à simplicidade da substituição das letras. ";
+  final String nome = "Atbash";
+  final Nivel nivel = Nivel.BASICO;
 
   @override
-  State<StatefulWidget> createState() => _RailFenceState(explicacao, nome);
+  State<StatefulWidget> createState() => _AtbashState(explicacao, nome);
 
   @override
   String decrypt(String cyphertext, {String key}) {
-    List caracteres = new List(cyphertext.length);
-    int linha = 0;
-    int count = 0;
-    String plaintext = "";
-    for (int i = 0; i < cyphertext.length; i++) {
-      if (linha == 0) {
-        if (count * 4 >= cyphertext.length) {
-          linha++;
-          count = 0;
-        } else {
-          caracteres[count * 4] = cyphertext[i];
-          count++;
-        }
+    String alfa = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    String alfaReverso = "";
+    //Revertendo o Alfabeto
+    for(int i = alfa.length-1; i > -1; i--){
+      alfaReverso += alfa[i];
+    }
+
+    String dencryText = "";
+    for (int i = 0; i < cyphertext.length; i++){
+      if(cyphertext.codeUnitAt(i) == 32){
+        dencryText += " ";
       }
-      if (linha == 1) {
-        if (count * 2 >= cyphertext.length) {
-          linha++;
-          count = 0;
-        } else {
-          caracteres[(count * 2) + linha] = cyphertext[i];
-          count++;
-        }
-      }
-      if (linha == 2) {
-        if ((count * 4) + 2 >= cyphertext.length) {
-          break;
-        } else {
-          caracteres[(count * 4) + 2] = cyphertext[i];
-          count++;
+      else{
+
+        for(int j = 0; j < alfaReverso.length; j++){
+          if(cyphertext[i] == alfaReverso[j]){
+            dencryText += alfa[j];
+            break;
+          }
         }
       }
     }
-    for (int i = 0; i < caracteres.length; i++) {
-      plaintext += caracteres[i];
-    }
-    return plaintext;
+    return dencryText;
   }
 
   @override
   String encrypt(String plaintext, {String key}) {
-    List caracteres = new List();
-    String cyphertext = "";
-    for (int i = 0; i < plaintext.length; i++) {
-      caracteres.add(plaintext[i]);
+    String alfa = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    String alfaReverso = "";
+    //Revertendo o Alfabeto
+    for(int i = alfa.length-1; i > -1; i--){
+      alfaReverso += alfa[i];
     }
-    for (int i = 0; i < 3; i++) {
-      for (int j = i; j < caracteres.length; j += i % 2 != 1 ? 4 : 2) {
-        cyphertext += caracteres[j];
+
+    String encryText = "";
+    plaintext = plaintext.toUpperCase();
+    for (int i = 0; i < plaintext.length; i++){
+      if(plaintext.codeUnitAt(i) == 32){
+        encryText += " ";
+      }
+      else{
+
+        for(int j = 0; j < alfa.length; j++){
+          if(plaintext[i] == alfa[j]){
+            encryText += alfaReverso[j];
+
+          }
+        }
       }
     }
-    return cyphertext;
+    return encryText;
   }
 }
 
-class _RailFenceState extends State<RailFence> {
+class _AtbashState extends State<Atbash> {
   final TextEditingController _input = new TextEditingController();
   String _output = "Resultado";
   final String explicacao;
   final String nome;
-  final RailFence CRIPTO = new RailFence();
+  final Atbash CRIPTO = new Atbash();
 
-  _RailFenceState(this.explicacao, this.nome);
+  _AtbashState(this.explicacao, this.nome);
 
   @override
   Widget build(BuildContext context) {
@@ -184,7 +180,8 @@ class BotaoCopiar extends StatelessWidget {
       child: new Text("Copiar resultado"),
       onPressed: () {
         Clipboard.setData(new ClipboardData(text: texto));
-        Scaffold.of(context)
+        Scaffold
+            .of(context)
             .showSnackBar(new SnackBar(content: new Text("Resultado copiado")));
       },
       color: Colors.grey.shade300,
